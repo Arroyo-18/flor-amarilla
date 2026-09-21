@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Mi Princesa Hermosa</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Allura&family=Dancing+Script&family=Great+Vibes&family=Parisienne&family=Azeret+Mono&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg-light: #f4f4f4;
+    --bg-dark:  #111217;
+    --text-light: #111;
+    --text-dark: #f4f4f4;
+    --muted: rgba(128,128,128,0.18);
+    --vh: 1vh; /* actualizado por JS */
+  }
+
+  html,body{height:100%; margin:0; padding:0; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+  body{
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Azeret Mono", monospace;
+    transition: background-color .45s ease, color .45s ease;
+    overflow:hidden;
+    background: var(--bg-light);
+    color: var(--text-light);
+    user-select:none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body.dark{ background:var(--bg-dark); color:var(--text-dark); }
+
+  /* ===========================
+     ESTRUCTURA GENERAL (base HTML1, distribución inspirada en HTML5)
+     =========================== */
+  .stage{
+    position: relative;
+    width: 100vw;
+    height: calc(var(--vh, 1vh) * 100);
+    display:flex;
+    flex-direction:column;
+  }
+
+  .header-container{
+    width:100%;
+    padding-top: max(10px, env(safe-area-inset-top));
+    flex-shrink:0;
+    z-index:20;
+  }
+  .top-row{
+    display:grid;
+    grid-template-columns: auto 1fr auto;
+    align-items:center;
+    padding: 0 14px;
+    gap: 10px;
+  }
+  .btn-group-left{ display:flex; justify-content:flex-start; }
+  .btn-group-right{ display:flex; justify-content:flex-end; }
+
+  .btn{
+    background: var(--muted);
+    border-radius:50%;
+    width:46px; height:46px; display:flex; align-items:center;
+    justify-content:center; font-size:20px; cursor:pointer; user-select:none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    border: none;
+    color:inherit;
+  }
+  .btn svg{ width:24px; height:auto; display:block; }
+  .btn:active{ transform:scale(0.92); }
+
+  #time{
+    font-family:'Azeret Mono', monospace; font-size:36px; font-weight:600;
+    text-align:center; user-select:none; cursor:pointer;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+
+  #secondBarContainer{ display:flex; justify-content:center; margin-top:10px; }
+  #secondBar{ display:flex; gap:2px; height:8px; align-items:center; }
+  .segment{ width:6px; height:100%; background:#ccc; border-radius:2px; transition:background .3s; }
+
+  @media (max-width:700px){
+    #time{ font-size:28px; }
+    .btn{ width:42px; height:42px; font-size:18px; }
+    .segment{ width:4px; }
+  }
+  @media (orientation: landscape) and (max-height:500px){
+    #time{ font-size:24px; }
+    .btn{ width:36px; height:36px; }
+  }
+
+  /* ===========================
+     ZONA CENTRAL: flor + mensaje
+     =========================== */
+  .canvas-container{
+    flex: 1 1 auto;
+    min-height: 0;
+    width:100%;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .flower-stage{
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+    margin: 6px 16px 0;
+    border-radius: 28px;
+    overflow: hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: radial-gradient(120% 120% at 50% 12%, #1b1f2e 0%, #0b0d14 72%);
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.55), 0 12px 30px rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.06);
+    cursor: pointer;
+  }
+
+  .flor-capa{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none;
+    transition: opacity .45s ease;
+  }
+  .flor-capa.activa{ opacity:1; pointer-events:auto; }
+
+  /* --- Girasol (flor amarilla) — geometría original de flor.html --- */
+  .gs-escena{ position:relative; width:360px; height:440px; }
+  .gs-tallo-linea{
+    position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+    width:8px; height:270px;
+    background: linear-gradient(to right, #052e0e, #0f6625, #052e0e);
+    border-radius: 0 0 15px 15px;
+    z-index:3;
+  }
+  .gs-hoja-unica-izquierda{
+    position:absolute; width:50px; height:80px;
+    border-radius: 12px 45px 12px 45px;
+    background: linear-gradient(225deg, #177d33 0%, #084015 60%, #031c08 100%);
+    box-shadow: inset 3px 3px 0px rgba(255,255,255,0.15);
+    transform-origin: bottom right;
+    transform: rotate(-45deg);
+    top:240px; left:calc(50% - 48px);
+    z-index:2;
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  #lienzoGirasol{
+    position:absolute; top:0; left:0; width:360px; height:440px;
+    z-index:5; pointer-events:none;
+  }
+
+  /* --- Trébol — geometría original de trebol.html (Canvas) --- */
+  .tr-stage{ position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+  #cloverCanvas{ display:block; }
+
+  /* --- Rosa — geometría/CSS original de rosa.html (prefijo rz-) --- */
+  .rz-scale-wrap{ transform-origin:center center; }
+
+  .rz-flor{
+    position: relative;
+    width: 260px;
+    height: 420px;
+    animation: rzNacer 2.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    transform-origin: bottom center;
+  }
+
+  .rz-capullo-principal{
+    position: relative;
+    width: 100%;
+    height: 180px;
+    z-index: 10;
+    transform-origin: bottom center;
+    animation: rzLatido 3.5s ease-in-out infinite;
+  }
+  .rz-capullo-principal > div{ position:absolute; width:58px; height:82px; transition: all 0.3s ease; }
+
+  .rz-capullo-principal > div:nth-child(1){
+    border-radius: 15px 15px 30px 30px;
+    left: calc(50% - 29px); top: 35px;
+    background: linear-gradient(180deg, #ff5c8a 0%, #e0285d 65%, #910830 100%);
+    z-index: 3;
+  }
+  .rz-capullo-principal > div:nth-child(2), .rz-capullo-principal > div:nth-child(4){
+    background: linear-gradient(145deg, #e83e6b 0%, #b81b43 70%, #66031b 100%);
+    left: calc(50% - 48px);
+    border-radius: 4px 42px 8px 42px;
+    transform-origin: bottom right;
+  }
+  .rz-capullo-principal > div:nth-child(3), .rz-capullo-principal > div:nth-child(5){
+    background: linear-gradient(215deg, #e83e6b 0%, #b81b43 70%, #66031b 100%);
+    left: calc(50% - 10px);
+    border-radius: 42px 4px 42px 8px;
+    transform-origin: bottom left;
+  }
+  .rz-capullo-principal > div:nth-child(2){ top:38px; height:85px; z-index:5; transform:rotate(-24deg); }
+  .rz-capullo-principal > div:nth-child(3){ top:38px; height:85px; z-index:5; transform:rotate(24deg); }
+  .rz-capullo-principal > div:nth-child(4){ top:40px; height:90px; z-index:4; transform:rotate(-14deg); }
+  .rz-capullo-principal > div:nth-child(5){ top:40px; height:90px; z-index:4; transform:rotate(14deg); }
+
+  .rz-capullo-principal > div:nth-child(6){
+    top:35px; height:85px; z-index:2;
+    background: linear-gradient(135deg, #a8153c 0%, #520215 100%);
+    left: calc(50% - 40px);
+    border-radius: 0 28px 4px 28px;
+    transform-origin: bottom right;
+    transform: rotate(-8deg);
+  }
+  .rz-capullo-principal > div:nth-child(7){
+    top:35px; height:85px; z-index:2;
+    background: linear-gradient(225deg, #a8153c 0%, #520215 100%);
+    left: calc(50% - 18px);
+    border-radius: 28px 0 28px 4px;
+    transform-origin: bottom left;
+    transform: rotate(8deg);
+  }
+
+  .rz-sepalos-caliz{
+    position:absolute; top:108px; left:50%; transform:translateX(-50%); z-index:15;
+  }
+  .rz-sepalos-caliz > div{
+    position:absolute; width:20px; height:52px;
+    background: linear-gradient(to top, #063d11 0%, #127529 75%, #1db845 100%);
+    transform-origin: bottom center;
+    clip-path: polygon(50% 0%, 92% 65%, 72% 100%, 28% 100%, 8% 65%);
+  }
+  .rz-sepalos-caliz > div:nth-child(1){ transform:rotate(-60deg); left:-24px; top:-6px; }
+  .rz-sepalos-caliz > div:nth-child(2){ transform:rotate(-25deg); left:-12px; top:-1px; }
+  .rz-sepalos-caliz > div:nth-child(3){ transform:rotate(0deg); left:-1px; top:2px; }
+  .rz-sepalos-caliz > div:nth-child(4){ transform:rotate(25deg); left:10px; top:-1px; }
+  .rz-sepalos-caliz > div:nth-child(5){ transform:rotate(60deg); left:22px; top:-6px; }
+
+  .rz-estructura-tallo{ position:absolute; width:100%; height:100%; bottom:0; left:0; z-index:4; }
+  .rz-tallo-linea{
+    position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+    width:8px; height:calc(100% - 115px);
+    background: linear-gradient(to right, #052e0e, #0f6625, #052e0e);
+    border-radius: 0 0 15px 15px;
+    z-index:3;
+  }
+  .rz-hoja-unica{
+    position:absolute; width:50px; height:80px;
+    border-radius: 45px 12px 45px 12px;
+    background: linear-gradient(135deg, #177d33 0%, #084015 60%, #031c08 100%);
+    box-shadow: inset -3px 3px 0px rgba(255,255,255,0.15);
+    transform-origin: bottom left;
+    transform: rotate(45deg);
+    top:190px; left: calc(50% - 2px);
+    z-index:2;
+  }
+  .rz-espina-unica{
+    position:absolute; width:0; height:0;
+    border: 5px solid transparent;
+    border-right: 8px solid #052e0e;
+    top:295px; left: calc(50% - 17px);
+    z-index:4;
+  }
+
+  @keyframes rzNacer{
+    0%{ clip-path: inset(100% 0 0 0); opacity:0; transform:scale(0.9); }
+    100%{ clip-path: inset(0 0 0 0); opacity:1; transform:scale(1); }
+  }
+  @keyframes rzLatido{
+    0%,100%{ transform:scale(1); filter:brightness(1) drop-shadow(0 0 4px rgba(232,62,107,0.2)); }
+    50%{ transform:scale(1.035); filter:brightness(1.2) drop-shadow(0 0 22px rgba(255,120,160,0.65)); }
+  }
+
+  /* ===========================
+     MENSAJE DE DOS LÍNEAS (lógica inspirada en HTML5: phrase-overlay / phrase-line)
+     =========================== */
+  .message-area{
+    flex-shrink:0;
+    padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
+    display:flex; justify-content:center;
+  }
+  #phrase-overlay{
+    display:flex; flex-direction:column; gap:8px;
+    width:100%; align-items:center;
+    pointer-events:none;
+  }
+  .phrase-line{
+    display:flex; justify-content:center; align-items:center; gap:10px;
+    font-family:'Dancing Script', cursive;
+    font-size: clamp(22px, 6vw, 36px);
+    white-space: nowrap;
+    min-height: 1.4em;
+    max-width: 94vw;
+  }
+  .emoji-side{
+    font-size: clamp(20px, 5vw, 32px);
+    display:inline-block;
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .phrase-line.spread .emoji-side:first-child{ transform: translateX(-25px); }
+  .phrase-line.spread .emoji-side:last-child{ transform: translateX(25px); }
+
+  @media (max-width:700px){
+    .phrase-line{ font-size: clamp(18px, 5.4vw, 30px); }
+    .emoji-side{ font-size: clamp(16px, 4.6vw, 26px); }
+  }
+  @media (orientation: landscape) and (max-height:500px){
+    .phrase-line{ font-size: clamp(16px, 4vh, 26px); }
+  }
+</style>
+</head>
+<body>
+  <div class="stage" id="stage">
+
+    <div class="header-container">
+      <div class="top-row">
+        <div class="btn-group-left">
+          <button class="btn" id="modeBtn" aria-pressed="false" title="Cambiar modo (angel/devil)">👼</button>
+        </div>
+
+        <div id="time" tabindex="0" title="Toca para alternar tema (claro/oscuro)">00:00:00</div>
+
+        <div class="btn-group-right">
+          <button class="btn" id="countryBtn" title="Cambiar país (PE/IT)"></button>
+        </div>
+      </div>
+      <div id="secondBarContainer"><div id="secondBar"></div></div>
+    </div>
+
+    <div class="canvas-container">
+
+      <div class="flower-stage" id="flowerStage" role="img" aria-label="Flor animada">
+
+        <!-- 🌻 Girasol matemático — Angel Mode (geometría original de flor.html) -->
+        <div class="flor-capa activa" id="gsCapa">
+          <div class="gs-escena" id="gsEscena">
+            <div class="gs-tallo-linea"></div>
+            <div class="gs-hoja-unica-izquierda"></div>
+            <canvas id="lienzoGirasol" width="360" height="440"></canvas>
+          </div>
+        </div>
+
+        <!-- 🍀 Trébol geométrico — Angel Mode (geometría original de trebol.html) -->
+        <div class="flor-capa" id="trCapa">
+          <div class="tr-stage" id="trStageInner">
+            <canvas id="cloverCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- 🌹 Rosa — Devil Mode exclusivo (geometría/CSS original de rosa.html) -->
+        <div class="flor-capa" id="rzCapa">
+          <div class="rz-scale-wrap" id="rzScaleWrap">
+            <div class="rz-flor" id="rzFlor">
+              <div class="rz-capullo-principal">
+                <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+              </div>
+              <div class="rz-sepalos-caliz">
+                <div></div><div></div><div></div><div></div><div></div>
+              </div>
+              <div class="rz-estructura-tallo">
+                <div class="rz-tallo-linea"></div>
+                <div class="rz-hoja-unica"></div>
+                <div class="rz-espina-unica"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="message-area">
+        <div id="phrase-overlay" aria-live="polite">
+          <div class="phrase-line" id="line1-container">
+            <span class="emoji-side" id="emoji1-left">🌻</span>
+            <span id="text-line1"></span>
+            <span class="emoji-side" id="emoji1-right">🌻</span>
+          </div>
+          <div class="phrase-line" id="line2-container">
+            <span class="emoji-side" id="emoji2-left">🌻</span>
+            <span id="text-line2"></span>
+            <span class="emoji-side" id="emoji2-right">🌻</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+/* =========================================================
+   CONFIGURACIÓN COMPARTIDA (proyecto principal "Mi Princesa Hermosa")
+   ========================================================= */
+const PHRASE_FONTS = ['Dancing Script','Great Vibes','Parisienne','Allura'];
+
+const flagSVGs = {
+  PE: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600"><rect width="900" height="600" fill="#D91023"/><rect x="300" width="300" height="600" fill="#FFF"/></svg>`,
+  IT: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1000"><rect width="500" height="1000" x="0" fill="#009246"/><rect width="500" height="1000" x="500" fill="#FFF"/><rect width="500" height="1000" x="1000" fill="#CE2B37"/></svg>`
+};
+
+const GREETINGS = {
+  PE:{ morning:"Buenos días", afternoon:"Buenas tardes", night:"Buenas noches" },
+  IT:{ morning:"Buongiorno", afternoon:"Buon pomeriggio", night:"Buona notte" }
+};
+const LUCK      = { PE:"Buena suerte", IT:"Buona fortuna" };
+const PRINCESS  = { PE:"Mi princesa hermosa", IT:"Mia principessa bellissima" };
+
+const FLOWER_EMOJI  = { girasol:'🌻', trebol:'🍀', rosa:'🌹' };
+const FLOWER_COLOR  = { girasol:'#eab308', trebol:'#22c55e', rosa:'#e0285d' };
+
+/* =========================================================
+   ESTADO
+   ========================================================= */
+let mode = 'angel';          // 'angel' | 'devil'
+let country = 'PE';          // 'PE' | 'IT'
+let angelFlower = 'girasol'; // 'girasol' | 'trebol' (solo aplica dentro de Angel)
+let forcedTheme = null;
+let lastAutomaticTheme = null;
+let currentFontIndex = 0;
+
+let lastMessageKey = '';
+let lastLine1 = '', lastLine2 = '';
+let typeTimers = [];
+
+/* Referencias DOM */
+const timeEl      = document.getElementById('time');
+const modeBtn     = document.getElementById('modeBtn');
+const countryBtn  = document.getElementById('countryBtn');
+const secondBar   = document.getElementById('secondBar');
+
+const flowerStage = document.getElementById('flowerStage');
+const gsCapa = document.getElementById('gsCapa');
+const trCapa = document.getElementById('trCapa');
+const rzCapa = document.getElementById('rzCapa');
+const gsEscena     = document.getElementById('gsEscena');
+const rzScaleWrap  = document.getElementById('rzScaleWrap');
+const rzFlor       = document.getElementById('rzFlor');
+
+const elText1 = document.getElementById('text-line1');
+const elText2 = document.getElementById('text-line2');
+const emoji1L = document.getElementById('emoji1-left');
+const emoji1R = document.getElementById('emoji1-right');
+const emoji2L = document.getElementById('emoji2-left');
+const emoji2R = document.getElementById('emoji2-right');
+const line1Container = document.getElementById('line1-container');
+const line2Container = document.getElementById('line2-container');
+
+const segments = [];
+for(let i=0;i<60;i++){ const s=document.createElement('div'); s.className='segment'; secondBar.appendChild(s); segments.push(s); }
+
+/* =========================================================
+   RELOJ Y TEMA (lógica original de "Mi Princesa Hermosa")
+   ========================================================= */
+function getTimeOfDay(h){ if(h>=6 && h<12) return 'morning'; if(h>=12 && h<18) return 'afternoon'; return 'night'; }
+function getTheme(h){ return (h>=6 && h<18) ? 'light' : 'dark'; }
+function applyTheme(theme){ document.body.classList.toggle('dark', theme==='dark'); }
+
+function updateTime(){
+  const now = new Date();
+  let h,m,s;
+  const options = { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false };
+  if(country === 'IT'){
+    options.timeZone = 'Europe/Rome';
+    const p = new Intl.DateTimeFormat('en-GB', options).format(now).split(':');
+    h = parseInt(p[0]); m = parseInt(p[1]); s = parseInt(p[2]);
+  } else {
+    h = now.getHours(); m = now.getMinutes(); s = now.getSeconds();
+  }
+
+  timeEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+  const automaticTheme = getTheme(h);
+  if(lastAutomaticTheme !== null && automaticTheme !== lastAutomaticTheme){ forcedTheme = null; }
+  applyTheme(forcedTheme || automaticTheme);
+  lastAutomaticTheme = automaticTheme;
+
+  const tod = getTimeOfDay(h);
+  updateMessage(tod);
+
+  const flower = (mode === 'devil') ? 'rosa' : angelFlower;
+  const color = FLOWER_COLOR[flower];
+  for(let i=0;i<60;i++){ segments[i].style.backgroundColor = i < s ? color : '#ccc'; }
+}
+
+/* =========================================================
+   MENSAJE DE DOS LÍNEAS (estructura inspirada en HTML5: #phrase-overlay / .phrase-line)
+   Primera línea: dinámica (saludo horario o "Buena suerte")
+   Segunda línea: siempre la frase de princesa
+   ========================================================= */
+function updateMessage(tod){
+  const flower = (mode === 'devil') ? 'rosa' : angelFlower;
+  const key = mode + '|' + country + '|' + flower + '|' + tod;
+  if(key === lastMessageKey) return;
+  lastMessageKey = key;
+
+  const line1 = (flower === 'trebol') ? LUCK[country] : GREETINGS[country][tod];
+  const line2 = PRINCESS[country];
+  const emoji = FLOWER_EMOJI[flower];
+
+  lastLine1 = line1; lastLine2 = line2;
+
+  emoji1L.textContent = emoji1R.textContent = emoji;
+  emoji2L.textContent = emoji2R.textContent = emoji;
+
+  startTypewriter(line1, line2);
+}
+
+function clearTypeTimers(){ typeTimers.forEach(clearTimeout); typeTimers = []; }
+
+function startTypewriter(line1, line2){
+  clearTypeTimers();
+  elText1.textContent = '';
+  elText2.textContent = '';
+
+  const font = `'${PHRASE_FONTS[currentFontIndex]}', cursive`;
+  elText1.style.fontFamily = font;
+  elText2.style.fontFamily = font;
+
+  // Los emojis parten separados cerca del centro y se recogen al iniciar el tipeo;
+  // luego el flujo natural del texto los va empujando hacia los extremos de su propia línea.
+  line1Container.classList.add('spread');
+  line2Container.classList.add('spread');
+
+  let i1 = 0;
+  function typeChar1(){
+    if(i1 < line1.length){
+      if(i1 === 0) line1Container.classList.remove('spread');
+      elText1.textContent += line1.charAt(i1++);
+      typeTimers.push(setTimeout(typeChar1, 45));
+    } else {
+      typeTimers.push(setTimeout(typeChar2, 220));
+    }
+  }
+  let i2 = 0;
+  function typeChar2(){
+    if(i2 < line2.length){
+      if(i2 === 0) line2Container.classList.remove('spread');
+      elText2.textContent += line2.charAt(i2++);
+      typeTimers.push(setTimeout(typeChar2, 45));
+    }
+  }
+  typeChar1();
+}
+
+function cyclePhraseFont(){
+  currentFontIndex = (currentFontIndex + 1) % PHRASE_FONTS.length;
+  startTypewriter(lastLine1, lastLine2);
+}
+
+/* =========================================================
+   🌻 GIRASOL MATEMÁTICO — geometría y algoritmo originales de flor.html
+   (16 pétalos, 14 capas, centro con filotaxis 137.5°, tallo, hoja)
+   ========================================================= */
+const Girasol = (function(){
+  const canvas = document.getElementById('lienzoGirasol');
+  const ctx = canvas.getContext('2d');
+
+  const centroX = canvas.width / 2;   // 180px
+  const centroY = 170;
+  const radioCentroMarron = 32;
+
+  const totalPetalos = 16;
+  const totalCapas = 14;
+
+  let rotacionGlobal = 0;
+  let velocidadRotacion = 0.003;
+
+  let capaActual = 0;
+  let petaloActual = 0;
+  let progresoPuntual = 0;
+
+  let velocidadTrazo = 0.04;
+  let animacionActiva = false;
+  let dibujoCompletado = false;
+  let rafId = null;
+
+  const lineasCompletadas = [];
+
+  function dibujarCentroMarrón(){
+    ctx.save();
+    ctx.translate(centroX, centroY);
+    ctx.rotate(rotacionGlobal);
+
+    const numGranosExteriores = 28;
+    for (let i = 0; i < numGranosExteriores; i++) {
+      const ang = (i * Math.PI * 2) / numGranosExteriores;
+      const rx = Math.cos(ang) * (radioCentroMarron - 2);
+      const ry = Math.sin(ang) * (radioCentroMarron - 2);
+      ctx.fillStyle = (i % 2 === 0) ? '#7a1c1e' : '#521012';
+      ctx.beginPath();
+      ctx.arc(rx, ry, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const gradCentro = ctx.createRadialGradient(0, 0, 2, 0, 0, radioCentroMarron - 4);
+    gradCentro.addColorStop(0, '#4a1517');
+    gradCentro.addColorStop(0.6, '#360c0e');
+    gradCentro.addColorStop(1, '#220506');
+    ctx.fillStyle = gradCentro;
+    ctx.beginPath();
+    ctx.arc(0, 0, radioCentroMarron - 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    const totalSemillas = 75;
+    const anguloOro = 137.5 * (Math.PI / 180);
+    const escalaEspiral = 2.8;
+
+    for (let n = 0; n < totalSemillas; n++) {
+      const r = escalaEspiral * Math.sqrt(n);
+      if (r > radioCentroMarron - 6) break;
+
+      const theta = n * anguloOro;
+      const x = r * Math.cos(theta);
+      const y = r * Math.sin(theta);
+
+      if (n % 3 === 0) ctx.fillStyle = '#b83b3e';
+      else if (n % 3 === 1) ctx.fillStyle = '#6b191b';
+      else ctx.fillStyle = '#8f2426';
+
+      ctx.beginPath();
+      ctx.arc(x, y, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.strokeStyle = '#8a2225';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, radioCentroMarron - 3, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function obtenerPuntosCurvaPetalo(iCapa, iPetalo){
+    const anguloPetalo = (iPetalo * (2 * Math.PI / totalPetalos));
+
+    const fraccionCapa = (iCapa + 1) / totalCapas;
+    const largoMaximo = 135;
+    const largo = radioCentroMarron + (largoMaximo - radioCentroMarron) * fraccionCapa;
+    const anchoMaximo = 34;
+    const ancho = anchoMaximo * (0.25 + 0.75 * fraccionCapa);
+
+    const puntos = [];
+    const pasos = 40;
+
+    for (let i = 0; i <= pasos; i++) {
+      const u = i / pasos;
+      const w = Math.sin(u * Math.PI) * (ancho / 2);
+      const distRadial = radioCentroMarron * 0.7 + u * (largo - radioCentroMarron * 0.7);
+      puntos.push({
+        x: Math.sin(anguloPetalo) * distRadial + Math.cos(anguloPetalo) * w,
+        y: -Math.cos(anguloPetalo) * distRadial + Math.sin(anguloPetalo) * w
+      });
+    }
+    for (let i = pasos; i >= 0; i--) {
+      const u = i / pasos;
+      const w = -Math.sin(u * Math.PI) * (ancho / 2);
+      const distRadial = radioCentroMarron * 0.7 + u * (largo - radioCentroMarron * 0.7);
+      puntos.push({
+        x: Math.sin(anguloPetalo) * distRadial + Math.cos(anguloPetalo) * w,
+        y: -Math.cos(anguloPetalo) * distRadial + Math.sin(anguloPetalo) * w
+      });
+    }
+    return puntos;
+  }
+
+  function dibujarTrazadoPetalo(iCapa, iPetalo, fraccionProgreso){
+    const puntos = obtenerPuntosCurvaPetalo(iCapa, iPetalo);
+    const limitePuntos = Math.floor(puntos.length * fraccionProgreso);
+    if (limitePuntos < 2) return;
+
+    ctx.save();
+    ctx.translate(centroX, centroY);
+    ctx.rotate(rotacionGlobal);
+
+    const opacidad = 0.65 + (1 - (iCapa / totalCapas)) * 0.35;
+    const tonoAmarillo = 48 + (iCapa / totalCapas) * 6;
+
+    ctx.strokeStyle = `hsla(${tonoAmarillo}, 100%, 52%, ${opacidad})`;
+    ctx.lineWidth = 1.1;
+    ctx.shadowColor = '#ffe600';
+    ctx.shadowBlur = iCapa < 4 ? 4 : 2;
+
+    ctx.beginPath();
+    ctx.moveTo(puntos[0].x, puntos[0].y);
+    for (let i = 1; i < limitePuntos; i++) ctx.lineTo(puntos[i].x, puntos[i].y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function frame(){
+    if (!animacionActiva) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    rotacionGlobal += velocidadRotacion;
+
+    for (let i = 0; i < lineasCompletadas.length; i++) {
+      const item = lineasCompletadas[i];
+      dibujarTrazadoPetalo(item.capa, item.petalo, 1.0);
+    }
+
+    if (!dibujoCompletado) {
+      progresoPuntual += velocidadTrazo;
+      dibujarTrazadoPetalo(capaActual, petaloActual, Math.min(progresoPuntual, 1.0));
+
+      if (progresoPuntual >= 1.0) {
+        lineasCompletadas.push({ capa: capaActual, petalo: petaloActual });
+        progresoPuntual = 0;
+
+        petaloActual++;
+        if (petaloActual >= totalPetalos) {
+          petaloActual = 0;
+          capaActual++;
+          if (capaActual >= totalCapas) dibujoCompletado = true;
+        }
+      }
+    }
+
+    dibujarCentroMarrón();
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function start(){
+    if (animacionActiva) return;
+    animacionActiva = true;
+    frame();
+  }
+  function stop(){
+    animacionActiva = false;
+    if (rafId) cancelAnimationFrame(rafId);
+  }
+  function reset(){
+    lineasCompletadas.length = 0;
+    capaActual = 0; petaloActual = 0; progresoPuntual = 0;
+    dibujoCompletado = false; rotacionGlobal = 0;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  return { start, stop, reset };
+})();
+
+/* =========================================================
+   🍀 TRÉBOL GEOMÉTRICO — geometría y algoritmo originales de trebol.html
+   (tallo Bézier, 4 hojas, 15 líneas Bézier por hoja, formación progresiva)
+   + rotación lenta y pulso sutil aplicados al conjunto ya dibujado (permitido)
+   ========================================================= */
+const Trebol = (function(){
+  const canvas = document.getElementById('cloverCanvas');
+  const ctx = canvas.getContext('2d');
+  const stageEl = document.getElementById('trStageInner');
+
+  let progress = 0;
+  let size = 0;
+  let active = false;
+  let rafId = null;
+
+  let rotacionLenta = 0;
+  const VELOCIDAD_ROTACION_LENTA = 0.0022;
+
+  function drawGeometricClover(ctx, cx, cy, scale, progress){
+    ctx.save();
+    ctx.translate(cx, cy - 20 * scale);
+
+    const currentStep = progress * 100;
+
+    if (currentStep > 0) {
+      const stemProg = Math.min(1, currentStep / 25);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(20 * scale, 80 * scale, 10 * scale, 140 * scale * stemProg);
+      ctx.strokeStyle = '#2d6a4f';
+      ctx.lineWidth = 5 * scale;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+
+    if (currentStep > 20) {
+      const cloverProg = Math.min(1, (currentStep - 20) / 80);
+      const activeLines = Math.floor(60 * cloverProg);
+      let lineCount = 0;
+
+      for (let l = 0; l < 4; l++) {
+        ctx.save();
+        ctx.rotate((Math.PI / 2) * l);
+
+        for (let k = 0; k < 15; k++) {
+          if (lineCount >= activeLines) break;
+          const spread = (k / 15) * 25 * scale;
+
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.bezierCurveTo(-30 * scale - spread, -40 * scale, -20 * scale, -75 * scale, 0, -50 * scale);
+          ctx.bezierCurveTo(20 * scale, -75 * scale, 30 * scale + spread, -40 * scale, 0, 0);
+
+          ctx.strokeStyle = `rgba(52, 199, 89, ${0.2 + (k / 15) * 0.5})`;
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+          lineCount++;
+        }
+        ctx.restore();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function resize(){
+    size = Math.min(stageEl.clientWidth, stageEl.clientHeight) * 0.86;
+    if (size <= 0) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    canvas.style.width = size + 'px';
+    canvas.style.height = size + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function animate(){
+    if (!active) return;
+    ctx.clearRect(0, 0, size, size);
+
+    if (progress < 1) progress += 0.008;
+
+    const scale = size / 400;
+    const cx = size / 2, cy = size / 2;
+
+    // Una vez formado el trébol, comienza su comportamiento normal: rotación lenta + pulso sutil.
+    let pulso = 1;
+    if (progress >= 1) {
+      rotacionLenta += VELOCIDAD_ROTACION_LENTA;
+      pulso = 1 + Math.sin(Date.now() / 900) * 0.018;
+    }
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rotacionLenta);
+    ctx.scale(pulso, pulso);
+    ctx.translate(-cx, -cy);
+    drawGeometricClover(ctx, cx, cy, scale, Math.min(1, progress));
+    ctx.restore();
+
+    rafId = requestAnimationFrame(animate);
+  }
+
+  function start(){
+    if (active) return;
+    active = true;
+    resize();
+    animate();
+  }
+  function stop(){
+    active = false;
+    if (rafId) cancelAnimationFrame(rafId);
+  }
+  function reset(){
+    progress = 0;
+    rotacionLenta = 0;
+  }
+
+  return { start, stop, reset, resize };
+})();
+
+/* =========================================================
+   🌹 ROSA — capa CSS/HTML original (rosa.html), exclusiva de Devil Mode
+   ========================================================= */
+function replayRosaBirth(){
+  rzFlor.style.animation = 'none';
+  void rzFlor.offsetWidth; // fuerza reflow para reiniciar la animación de nacimiento
+  rzFlor.style.animation = '';
+}
+
+/* =========================================================
+   CAMBIO DE FLOR ACTIVA
+   Angel  -> girasol o trébol (alternables con clic)
+   Devil  -> rosa (exclusiva; nunca aparece en Angel)
+   Al volver de Devil a Angel siempre se restablece el girasol.
+   ========================================================= */
+function setActiveFlowerLayer(){
+  gsCapa.classList.remove('activa');
+  trCapa.classList.remove('activa');
+  rzCapa.classList.remove('activa');
+  Girasol.stop();
+  Trebol.stop();
+
+  if (mode === 'devil') {
+    rzCapa.classList.add('activa');
+    replayRosaBirth();
+  } else if (angelFlower === 'trebol') {
+    trCapa.classList.add('activa');
+    Trebol.reset();
+    Trebol.start();
+  } else {
+    gsCapa.classList.add('activa');
+    Girasol.reset();
+    Girasol.start();
+  }
+
+  requestAnimationFrame(() => requestAnimationFrame(fitFlowerScales));
+  lastMessageKey = ''; // fuerza reescritura del mensaje para la nueva flor
+  updateTime();
+}
+
+/* =========================================================
+   AJUSTE RESPONSIVE (solo escala el contenedor completo de cada flor;
+   no toca coordenadas internas de ningún algoritmo/CSS)
+   ========================================================= */
+function fitFlowerScales(){
+  const rect = flowerStage.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const pad = 0.92;
+
+  const sGS = Math.max(0.35, Math.min((rect.width*pad)/360, (rect.height*pad)/440, 1.3));
+  gsEscena.style.transform = `scale(${sGS})`;
+
+  const sRZ = Math.max(0.35, Math.min((rect.width*pad)/260, (rect.height*pad)/420, 1.3));
+  rzScaleWrap.style.transform = `scale(${sRZ})`;
+
+  Trebol.resize();
+}
+
+/* =========================================================
+   EVENTOS DE INTERACCIÓN
+   ========================================================= */
+modeBtn.addEventListener('click', () => {
+  mode = (mode === 'angel') ? 'devil' : 'angel';
+  modeBtn.textContent = (mode === 'angel') ? '👼' : '😈';
+  modeBtn.setAttribute('aria-pressed', mode === 'devil');
+  if (mode === 'angel') angelFlower = 'girasol'; // obligatorio: siempre vuelve la amarilla
+  setActiveFlowerLayer();
+});
+
+countryBtn.addEventListener('click', () => {
+  country = (country === 'PE') ? 'IT' : 'PE';
+  countryBtn.innerHTML = flagSVGs[country];
+  lastMessageKey = '';
+  updateTime();
+});
+
+flowerStage.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (mode === 'angel') {
+    angelFlower = (angelFlower === 'girasol') ? 'trebol' : 'girasol';
+    setActiveFlowerLayer();
+  }
+});
+
+timeEl.addEventListener('click', () => {
+  const isDark = document.body.classList.contains('dark');
+  forcedTheme = isDark ? 'light' : 'dark';
+  applyTheme(forcedTheme);
+});
+timeEl.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); timeEl.click(); }
+});
+
+document.body.addEventListener('click', (e) => {
+  if (e.target.closest('#flowerStage') || e.target.closest('.btn') || e.target === timeEl) return;
+  cyclePhraseFont();
+});
+
+/* =========================================================
+   RESPONSIVE: viewport, --vh, visualViewport, resize/orientación
+   ========================================================= */
+function onResize(){
+  const vh = (window.visualViewport && window.visualViewport.height) ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty('--vh', `${vh * 0.01}px`);
+  fitFlowerScales();
+}
+
+window.addEventListener('resize', onResize);
+window.addEventListener('orientationchange', () => setTimeout(onResize, 120));
+window.addEventListener('load', () => setTimeout(onResize, 60));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', onResize);
+  window.visualViewport.addEventListener('scroll', () => fitFlowerScales());
+}
+
+/* =========================================================
+   INICIALIZACIÓN
+   ========================================================= */
+countryBtn.innerHTML = flagSVGs[country];
+modeBtn.textContent = '👼';
+
+onResize();
+setActiveFlowerLayer();
+
+updateTime();
+setInterval(updateTime, 1000);
+</script>
+</body>
+</html>
